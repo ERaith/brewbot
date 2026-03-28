@@ -435,6 +435,21 @@ func (d *DB) UpsertRecipe(brewID int64, style string, og, fg, abv float64, ingre
 	return err
 }
 
+// SetFinalGravity updates FG and recalculates ABV on an existing recipe.
+func (d *DB) SetFinalGravity(brewID int64, fg float64) (float64, error) {
+	var og float64
+	err := d.conn.QueryRow(`SELECT COALESCE(og,0) FROM recipes WHERE brew_id=?`, brewID).Scan(&og)
+	if err != nil {
+		return 0, err
+	}
+	abv := 0.0
+	if og > fg {
+		abv = (og - fg) * 131.25
+	}
+	_, err = d.conn.Exec(`UPDATE recipes SET fg=?,abv=? WHERE brew_id=?`, fg, abv, brewID)
+	return abv, err
+}
+
 func (d *DB) GetRecipe(brewID int64) (*Recipe, error) {
 	var r Recipe
 	err := d.conn.QueryRow(

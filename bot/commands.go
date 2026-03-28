@@ -83,7 +83,7 @@ var commands = []*discordgo.ApplicationCommand{
 		Options: []*discordgo.ApplicationCommandOption{
 			{
 				Name:        "submit",
-				Description: "Submit a recipe — also renames this channel",
+				Description: "Submit your brew day recipe (OG, ingredients, notes — FG comes later)",
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Options: []*discordgo.ApplicationCommandOption{
 					{
@@ -121,6 +121,19 @@ var commands = []*discordgo.ApplicationCommand{
 						Name:        "notes",
 						Description: "Brewing notes or process details",
 						Required:    false,
+					},
+				},
+			},
+			{
+				Name:        "fg",
+				Description: "Set final gravity at kegging — calculates and locks in ABV",
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Type:        discordgo.ApplicationCommandOptionNumber,
+						Name:        "fg",
+						Description: "Final gravity reading, e.g. 1.012",
+						Required:    true,
 					},
 				},
 			},

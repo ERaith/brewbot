@@ -12,6 +12,8 @@ func (b *Bot) handleRecipe(s *discordgo.Session, i *discordgo.InteractionCreate)
 	switch sub.Name {
 	case "submit":
 		return b.recipeSubmit(s, i, sub)
+	case "fg":
+		return b.recipeFG(s, i, sub)
 	case "view":
 		return b.recipeView(s, i)
 	}
@@ -80,10 +82,9 @@ func (b *Bot) recipeSubmit(s *discordgo.Session, i *discordgo.InteractionCreate,
 	if og > 0 {
 		sb.WriteString(fmt.Sprintf("**OG:** %.3f", og))
 		if fg > 0 {
-			sb.WriteString(fmt.Sprintf("  **FG:** %.3f", fg))
-		}
-		if abv > 0 {
-			sb.WriteString(fmt.Sprintf("  **ABV:** %.1f%%", abv))
+			sb.WriteString(fmt.Sprintf("  **FG:** %.3f  **ABV:** %.1f%%", fg, abv))
+		} else {
+			sb.WriteString("  _FG TBD — run `/recipe fg` at kegging to lock in ABV_")
 		}
 		sb.WriteString("\n")
 	}
@@ -165,5 +166,51 @@ func (b *Bot) recipeView(s *discordgo.Session, i *discordgo.InteractionCreate) e
 	}
 
 	respondPublic(s, i, sb.String())
+	return nil
+}
+
+func (b *Bot) recipeFG(s *discordgo.Session, i *discordgo.InteractionCreate, sub *discordgo.ApplicationCommandInteractionDataOption) error {
+	brew, err := b.db.GetBrewByChannel(i.ChannelID)
+	if err != nil {
+		return err
+	}
+	if brew == nil {
+		return fmt.Errorf("this command only works in a brew channel")
+	}
+
+	recipe, err := b.db.GetRecipe(brew.ID)
+	if err != nil {
+		return err
+	}
+	if recipe == nil {
+		return fmt.Errorf("no recipe submitted yet — run `/recipe submit` first")
+	}
+	if recipe.OG == 0 {
+		return fmt.Errorf("no OG on record — submit the recipe with OG first so ABV can be calculated")
+	}
+
+	fg := sub.Options[0].FloatValue()
+	if fg >= recipe.OG {
+		return fmt.Errorf("FG (%.3f) must be less than OG (%.3f)", fg, recipe.OG)
+	}
+
+	abv, err := b.db.SetFinalGravity(brew.ID, fg)
+	if err != nil {
+		return err
+	}
+
+	attenuation := ((recipe.OG - fg) / (recipe.OG - 1.0)) * 100
+
+	msg := fmt.Sprintf(
+		"🍺 **%s** — FG locked in!\n**OG:** %.3f → **FG:** %.3f\n**ABV: %.1f%%**  _(apparent attenuation: %.1f%%)_",
+		brew.Name, recipe.OG, fg, abv, attenuation,
+	)
+	respondPublic(s, i, msg)
+
+	// Update the pinned stats card with final ABV
+	updated, err := b.db.GetBrewByChannel(i.ChannelID)
+	if err == nil && updated != nil {
+		b.postOrUpdateStatsCard(s, updated)
+	}
 	return nil
 }
