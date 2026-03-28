@@ -66,7 +66,7 @@ func (b *Bot) buildBlackboard(guildID string) (string, error) {
 	log.Printf("blackboard: got %d entries", len(entries))
 
 	var sb strings.Builder
-	sb.WriteString("═══════════════════\n### 📋 Brews\n═══════════════════\n\n")
+	sb.WriteString("**📋 Brews**\n\n")
 
 	if len(entries) == 0 {
 		sb.WriteString("_No completed brews yet._")
@@ -75,7 +75,7 @@ func (b *Bot) buildBlackboard(guildID string) (string, error) {
 
 	for idx, e := range entries {
 		if idx > 0 {
-			sb.WriteString("───────────────────\n")
+			sb.WriteString("\n")
 		}
 
 		name := e.Brew.Name
