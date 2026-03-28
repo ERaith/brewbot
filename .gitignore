@@ -1,0 +1,5 @@
+.env
+brewbot
+brewbot.db
+*.db-shm
+*.db-wal
