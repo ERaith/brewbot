@@ -93,7 +93,12 @@ func (b *Bot) recipeSubmit(s *discordgo.Session, i *discordgo.InteractionCreate,
 	if notes != "" {
 		sb.WriteString(fmt.Sprintf("\n**Notes:** %s\n", notes))
 	}
-	sb.WriteString("\nUse `/rate` to rate this brew after the session!")
+	// Post/update the pinned stats card
+	// Re-fetch brew to get latest state (name just set above)
+	updated, err := b.db.GetBrewByChannel(i.ChannelID)
+	if err == nil && updated != nil {
+		b.postOrUpdateStatsCard(s, updated)
+	}
 
 	respondPublic(s, i, sb.String())
 	return nil

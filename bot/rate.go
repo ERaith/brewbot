@@ -37,6 +37,9 @@ func (b *Bot) handleRate(s *discordgo.Session, i *discordgo.InteractionCreate) e
 		msg += "\n_Brew is complete — rating added to the blackboard._"
 	}
 	respondPublic(s, i, msg)
+
+	// Update the pinned stats card with new rating
+	b.postOrUpdateStatsCard(s, brew)
 	return nil
 }
 

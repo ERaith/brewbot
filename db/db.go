@@ -65,16 +65,19 @@ func (d *DB) migrate() error {
 			date    TEXT NOT NULL
 		)`,
 		`CREATE TABLE IF NOT EXISTS brews (
-			id          INTEGER PRIMARY KEY AUTOINCREMENT,
-			guild_id    TEXT NOT NULL,
-			name        TEXT,
-			brewer_id   TEXT NOT NULL,
-			brewer_name TEXT NOT NULL,
-			date        TEXT,
-			channel_id  TEXT,
-			status      TEXT NOT NULL DEFAULT 'scheduled',
-			created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+			id               INTEGER PRIMARY KEY AUTOINCREMENT,
+			guild_id         TEXT NOT NULL,
+			name             TEXT,
+			brewer_id        TEXT NOT NULL,
+			brewer_name      TEXT NOT NULL,
+			date             TEXT,
+			channel_id       TEXT,
+			stats_message_id TEXT,
+			status           TEXT NOT NULL DEFAULT 'scheduled',
+			created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
+		// Migration: add stats_message_id to existing DBs
+		`ALTER TABLE brews ADD COLUMN stats_message_id TEXT`,
 		`CREATE TABLE IF NOT EXISTS recipes (
 			id          INTEGER PRIMARY KEY AUTOINCREMENT,
 			brew_id     INTEGER NOT NULL UNIQUE REFERENCES brews(id),
@@ -99,6 +102,10 @@ func (d *DB) migrate() error {
 	}
 	for _, s := range stmts {
 		if _, err := d.conn.Exec(s); err != nil {
+			// ALTER TABLE fails if column already exists — safe to ignore
+			if s[:min(5, len(s))] == "ALTER" {
+				continue
+			}
 			return fmt.Errorf("stmt %q: %w", s[:min(40, len(s))], err)
 		}
 	}
@@ -147,14 +154,15 @@ type PollOption struct {
 }
 
 type Brew struct {
-	ID         int64
-	GuildID    string
-	Name       string
-	BrewerID   string
-	BrewerName string
-	Date       string
-	ChannelID  string
-	Status     string
+	ID             int64
+	GuildID        string
+	Name           string
+	BrewerID       string
+	BrewerName     string
+	Date           string
+	ChannelID      string
+	StatsMessageID string
+	Status         string
 }
 
 type Recipe struct {
@@ -396,14 +404,19 @@ func (d *DB) SetBrewName(brewID int64, name string) error {
 func (d *DB) GetBrewByChannel(channelID string) (*Brew, error) {
 	var b Brew
 	err := d.conn.QueryRow(
-		`SELECT id,guild_id,COALESCE(name,''),brewer_id,brewer_name,COALESCE(date,''),COALESCE(channel_id,''),status
+		`SELECT id,guild_id,COALESCE(name,''),brewer_id,brewer_name,COALESCE(date,''),COALESCE(channel_id,''),COALESCE(stats_message_id,''),status
 		 FROM brews WHERE channel_id=?`,
 		channelID,
-	).Scan(&b.ID, &b.GuildID, &b.Name, &b.BrewerID, &b.BrewerName, &b.Date, &b.ChannelID, &b.Status)
+	).Scan(&b.ID, &b.GuildID, &b.Name, &b.BrewerID, &b.BrewerName, &b.Date, &b.ChannelID, &b.StatsMessageID, &b.Status)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
 	return &b, err
+}
+
+func (d *DB) SetBrewStatsMessage(brewID int64, messageID string) error {
+	_, err := d.conn.Exec(`UPDATE brews SET stats_message_id=? WHERE id=?`, messageID, brewID)
+	return err
 }
 
 func (d *DB) CompleteBrew(brewID int64) error {
