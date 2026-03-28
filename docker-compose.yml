@@ -1,0 +1,11 @@
+services:
+  brewbot:
+    build:
+      context: .
+      args:
+        VERSION: ${VERSION:-dev}
+    container_name: brewbot
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./brewbot.db:/app/brewbot.db
