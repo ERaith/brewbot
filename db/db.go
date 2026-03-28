@@ -532,7 +532,6 @@ func (d *DB) GetBlackboard(guildID string) ([]BlackboardEntry, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 	var entries []BlackboardEntry
 	for rows.Next() {
 		var e BlackboardEntry
@@ -540,9 +539,16 @@ func (d *DB) GetBlackboard(guildID string) ([]BlackboardEntry, error) {
 			&e.Brew.ID, &e.Brew.GuildID, &e.Brew.Name, &e.Brew.BrewerID, &e.Brew.BrewerName,
 			&e.Brew.Date, &e.Brew.ChannelID, &e.Brew.Status, &e.AvgRating,
 		)
-		e.Recipe, _ = d.GetRecipe(e.Brew.ID)
-		e.Ratings, _ = d.GetRatings(e.Brew.ID)
 		entries = append(entries, e)
 	}
-	return entries, rows.Err()
+	// Close rows before making additional queries — single connection pool would deadlock otherwise
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	for i := range entries {
+		entries[i].Recipe, _ = d.GetRecipe(entries[i].Brew.ID)
+		entries[i].Ratings, _ = d.GetRatings(entries[i].Brew.ID)
+	}
+	return entries, nil
 }
