@@ -43,6 +43,13 @@ func (b *Bot) onInteraction(s *discordgo.Session, i *discordgo.InteractionCreate
 	}
 }
 
+func (b *Bot) onReady(s *discordgo.Session, r *discordgo.Ready) {
+	log.Printf("connected as %s, refreshing blackboard for %d guild(s)", r.User.Username, len(r.Guilds))
+	for _, g := range r.Guilds {
+		go b.updateBlackboard(s, g.ID)
+	}
+}
+
 func (b *Bot) onReactionAdd(s *discordgo.Session, r *discordgo.MessageReactionAdd) {
 	if r.UserID == s.State.User.ID {
 		return // ignore bot's own reactions

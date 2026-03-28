@@ -26,6 +26,7 @@ func New(cfg *config.Config, database *db.DB) (*Bot, error) {
 func (b *Bot) Start() error {
 	b.session.AddHandler(b.onInteraction)
 	b.session.AddHandler(b.onReactionAdd)
+	b.session.AddHandler(b.onReady)
 	b.session.Identify.Intents = discordgo.IntentsGuilds |
 		discordgo.IntentsGuildMessages |
 		discordgo.IntentsGuildMessageReactions
@@ -37,14 +38,6 @@ func (b *Bot) Start() error {
 	if err := b.registerCommands(); err != nil {
 		return fmt.Errorf("register commands: %w", err)
 	}
-
-	// Refresh blackboard on startup for all guilds the bot is in
-	go func() {
-		guilds := b.session.State.Guilds
-		for _, g := range guilds {
-			b.updateBlackboard(b.session, g.ID)
-		}
-	}()
 
 	log.Println("bot started, commands registered")
 	return nil
