@@ -125,6 +125,11 @@ var commands = []*discordgo.ApplicationCommand{
 				},
 			},
 			{
+				Name:        "scan",
+				Description: "Scan the last image or text post in this channel — Claude extracts the recipe",
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+			},
+			{
 				Name:        "fg",
 				Description: "Set final gravity at kegging — calculates and locks in ABV",
 				Type:        discordgo.ApplicationCommandOptionSubCommand,

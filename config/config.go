@@ -3,9 +3,10 @@ package config
 import "os"
 
 type Config struct {
-	Token  string
-	AppID  string
-	DBPath string
+	Token        string
+	AppID        string
+	DBPath       string
+	AnthropicKey string
 }
 
 func Load() *Config {
@@ -14,8 +15,9 @@ func Load() *Config {
 		dbPath = "brewbot.db"
 	}
 	return &Config{
-		Token:  os.Getenv("DISCORD_TOKEN"),
-		AppID:  os.Getenv("DISCORD_APP_ID"),
-		DBPath: dbPath,
+		Token:        os.Getenv("DISCORD_TOKEN"),
+		AppID:        os.Getenv("DISCORD_APP_ID"),
+		DBPath:       dbPath,
+		AnthropicKey: os.Getenv("ANTHROPIC_API_KEY"),
 	}
 }

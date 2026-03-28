@@ -12,6 +12,8 @@ func (b *Bot) handleRecipe(s *discordgo.Session, i *discordgo.InteractionCreate)
 	switch sub.Name {
 	case "submit":
 		return b.recipeSubmit(s, i, sub)
+	case "scan":
+		return b.recipeScan(s, i)
 	case "fg":
 		return b.recipeFG(s, i, sub)
 	case "view":
