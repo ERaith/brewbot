@@ -33,6 +33,12 @@ func (d *DB) migrate() error {
 	stmts := []string{
 		`PRAGMA journal_mode=WAL`,
 		`PRAGMA foreign_keys=ON`,
+		`CREATE TABLE IF NOT EXISTS guild_config (
+			guild_id TEXT NOT NULL,
+			key      TEXT NOT NULL,
+			value    TEXT NOT NULL,
+			PRIMARY KEY(guild_id, key)
+		)`,
 		`CREATE TABLE IF NOT EXISTS rotation (
 			id       INTEGER PRIMARY KEY AUTOINCREMENT,
 			guild_id TEXT NOT NULL,
@@ -190,6 +196,23 @@ type BlackboardEntry struct {
 	Recipe    *Recipe
 	AvgRating float64
 	Ratings   []Rating
+}
+
+// --- Guild Config ---
+
+func (d *DB) SetConfig(guildID, key, value string) error {
+	_, err := d.conn.Exec(
+		`INSERT INTO guild_config(guild_id,key,value) VALUES(?,?,?)
+		 ON CONFLICT(guild_id,key) DO UPDATE SET value=excluded.value`,
+		guildID, key, value,
+	)
+	return err
+}
+
+func (d *DB) GetConfig(guildID, key string) string {
+	var value string
+	d.conn.QueryRow(`SELECT value FROM guild_config WHERE guild_id=? AND key=?`, guildID, key).Scan(&value)
+	return value
 }
 
 // --- Rotation ---

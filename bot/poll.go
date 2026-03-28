@@ -196,6 +196,9 @@ func (b *Bot) closePollAndCreateChannel(s *discordgo.Session, guildID string, po
 		s.ChannelMessagePin(newCh.ID, pinMsg.ID)
 	}
 
+	// Ensure blackboard channel exists
+	go b.updateBlackboard(s, guildID)
+
 	// Announce in the poll channel
 	s.ChannelMessageSend(poll.ChannelID, fmt.Sprintf(
 		"🏆 **Poll closed!** Winning date: **%s**\n"+

@@ -94,12 +94,12 @@ func (b *Bot) recipeSubmit(s *discordgo.Session, i *discordgo.InteractionCreate,
 	if notes != "" {
 		sb.WriteString(fmt.Sprintf("\n**Notes:** %s\n", notes))
 	}
-	// Post/update the pinned stats card
-	// Re-fetch brew to get latest state (name just set above)
+	// Post/update pinned stats card + blackboard
 	updated, err := b.db.GetBrewByChannel(i.ChannelID)
 	if err == nil && updated != nil {
 		b.postOrUpdateStatsCard(s, updated)
 	}
+	go b.updateBlackboard(s, i.GuildID)
 
 	respondPublic(s, i, sb.String())
 	return nil
@@ -207,10 +207,11 @@ func (b *Bot) recipeFG(s *discordgo.Session, i *discordgo.InteractionCreate, sub
 	)
 	respondPublic(s, i, msg)
 
-	// Update the pinned stats card with final ABV
+	// Update pinned stats card + blackboard
 	updated, err := b.db.GetBrewByChannel(i.ChannelID)
 	if err == nil && updated != nil {
 		b.postOrUpdateStatsCard(s, updated)
 	}
+	go b.updateBlackboard(s, i.GuildID)
 	return nil
 }

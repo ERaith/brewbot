@@ -35,8 +35,6 @@ func (b *Bot) onInteraction(s *discordgo.Session, i *discordgo.InteractionCreate
 		err = b.handleComplete(s, i)
 	case "abv":
 		err = b.handleABV(s, i)
-	case "blackboard":
-		err = b.handleBlackboard(s, i)
 	}
 
 	if err != nil {

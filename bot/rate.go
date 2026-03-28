@@ -38,8 +38,9 @@ func (b *Bot) handleRate(s *discordgo.Session, i *discordgo.InteractionCreate) e
 	}
 	respondPublic(s, i, msg)
 
-	// Update the pinned stats card with new rating
+	// Update pinned stats card + blackboard
 	b.postOrUpdateStatsCard(s, brew)
+	go b.updateBlackboard(s, i.GuildID)
 	return nil
 }
 
@@ -73,7 +74,7 @@ func (b *Bot) handleComplete(s *discordgo.Session, i *discordgo.InteractionCreat
 	} else {
 		sb.WriteString("No ratings yet — everyone can still `/rate` this brew.\n")
 	}
-	sb.WriteString("\nRun `/blackboard` to see all past brews.")
+	sb.WriteString("\nThe blackboard has been updated.")
 
 	respondPublic(s, i, sb.String())
 	return nil

@@ -185,10 +185,6 @@ var commands = []*discordgo.ApplicationCommand{
 			},
 		},
 	},
-	{
-		Name:        "blackboard",
-		Description: "Show all past brews and their ratings",
-	},
 }
 
 func (b *Bot) registerCommands() error {
