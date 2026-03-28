@@ -12,10 +12,9 @@ RUN go build -ldflags "-X main.Version=${VERSION}" -o brewbot .
 ### Runtime stage
 FROM alpine:latest
 
-RUN adduser -D -u 1001 brewbot
 WORKDIR /app
+RUN mkdir -p /data
 
 COPY --from=builder /app/brewbot .
 
-USER brewbot
 ENTRYPOINT ["./brewbot"]

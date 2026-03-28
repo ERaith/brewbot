@@ -1,5 +1,6 @@
 .env
 brewbot
-brewbot.db
+data/
+*.db
 *.db-shm
 *.db-wal
