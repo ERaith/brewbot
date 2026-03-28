@@ -46,7 +46,15 @@ func (b *Bot) onInteraction(s *discordgo.Session, i *discordgo.InteractionCreate
 func (b *Bot) onReady(s *discordgo.Session, r *discordgo.Ready) {
 	log.Printf("connected as %s, refreshing blackboard for %d guild(s)", r.User.Username, len(r.Guilds))
 	for _, g := range r.Guilds {
-		go b.updateBlackboard(s, g.ID)
+		guildID := g.ID
+		go func() {
+			defer func() {
+				if rc := recover(); rc != nil {
+					log.Printf("blackboard panic: %v", rc)
+				}
+			}()
+			b.updateBlackboard(s, guildID)
+		}()
 	}
 }
 
