@@ -66,6 +66,7 @@ func (b *Bot) buildBlackboard(guildID string) (string, error) {
 	log.Printf("blackboard: got %d entries", len(entries))
 
 	var sb strings.Builder
+	sb.WriteString("### 📋 Brews\n\n")
 
 	if len(entries) == 0 {
 		sb.WriteString("_No completed brews yet._")
