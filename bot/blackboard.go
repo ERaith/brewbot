@@ -2,6 +2,7 @@ package bot
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -12,16 +13,20 @@ import (
 func (b *Bot) updateBlackboard(s *discordgo.Session, guildID string) {
 	channelID := b.db.GetConfig(guildID, "blackboard_channel_id")
 	messageID := b.db.GetConfig(guildID, "blackboard_message_id")
+	log.Printf("blackboard: guild=%s channel=%s message=%s", guildID, channelID, messageID)
 
 	content, err := b.buildBlackboard(guildID)
 	if err != nil {
+		log.Printf("blackboard: buildBlackboard error: %v", err)
 		return
 	}
+	log.Printf("blackboard: content length=%d", len(content))
 
 	// Create channel if we don't have one yet
 	if channelID == "" {
 		ch, err := s.GuildChannelCreate(guildID, "blackboard", discordgo.ChannelTypeGuildText)
 		if err != nil {
+			log.Printf("blackboard: create channel error: %v", err)
 			return
 		}
 		channelID = ch.ID
@@ -32,15 +37,18 @@ func (b *Bot) updateBlackboard(s *discordgo.Session, guildID string) {
 	if messageID == "" {
 		msg, err := s.ChannelMessageSend(channelID, content)
 		if err != nil {
+			log.Printf("blackboard: send message error: %v", err)
 			return
 		}
 		s.ChannelMessagePin(channelID, msg.ID)
 		b.db.SetConfig(guildID, "blackboard_message_id", msg.ID)
+		log.Printf("blackboard: posted message %s", msg.ID)
 	} else {
 		if _, err := s.ChannelMessageEdit(channelID, messageID, content); err != nil {
-			// Message was deleted — post a new one
+			log.Printf("blackboard: edit error: %v — reposting", err)
 			msg, err := s.ChannelMessageSend(channelID, content)
 			if err != nil {
+				log.Printf("blackboard: repost error: %v", err)
 				return
 			}
 			s.ChannelMessagePin(channelID, msg.ID)
