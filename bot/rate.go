@@ -33,6 +33,9 @@ func (b *Bot) handleRate(s *discordgo.Session, i *discordgo.InteractionCreate) e
 	if notes != "" {
 		msg += fmt.Sprintf("\n> %s", notes)
 	}
+	if brew.Status == "complete" {
+		msg += "\n_Brew is complete — rating added to the blackboard._"
+	}
 	respondPublic(s, i, msg)
 	return nil
 }
