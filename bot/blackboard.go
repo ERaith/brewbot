@@ -58,52 +58,65 @@ func (b *Bot) updateBlackboard(s *discordgo.Session, guildID string) {
 }
 
 func (b *Bot) buildBlackboard(guildID string) (string, error) {
+	log.Printf("blackboard: querying entries for guild %s", guildID)
 	entries, err := b.db.GetBlackboard(guildID)
 	if err != nil {
 		return "", err
 	}
+	log.Printf("blackboard: got %d entries", len(entries))
 
 	var sb strings.Builder
-	sb.WriteString("# 📋 The Blackboard\n\n")
 
 	if len(entries) == 0 {
 		sb.WriteString("_No completed brews yet._")
 		return sb.String(), nil
 	}
 
-	for _, e := range entries {
+	for idx, e := range entries {
+		if idx > 0 {
+			sb.WriteString("───────────────────\n")
+		}
+
 		name := e.Brew.Name
 		if name == "" {
 			name = "Unnamed Brew"
 		}
 
-		sb.WriteString(fmt.Sprintf("## 🍺 %s\n", name))
-		sb.WriteString(fmt.Sprintf("**Brewer:** <@%s>", e.Brew.BrewerID))
+		sb.WriteString(fmt.Sprintf("🍺 **%s**\n", name))
+
+		sb.WriteString(fmt.Sprintf("Brewer: <@%s>", e.Brew.BrewerID))
 		if e.Brew.Date != "" {
-			sb.WriteString(fmt.Sprintf("  **Date:** %s", e.Brew.Date))
-		}
-		if e.Recipe != nil && e.Recipe.Style != "" {
-			sb.WriteString(fmt.Sprintf("  **Style:** %s", e.Recipe.Style))
-		}
-		if e.Recipe != nil && e.Recipe.ABV > 0 {
-			sb.WriteString(fmt.Sprintf("  **ABV:** %.1f%%", e.Recipe.ABV))
+			sb.WriteString(fmt.Sprintf(" · %s", e.Brew.Date))
 		}
 		sb.WriteString("\n")
+
+		if e.Recipe != nil && (e.Recipe.Style != "" || e.Recipe.ABV > 0) {
+			if e.Recipe.Style != "" {
+				sb.WriteString(fmt.Sprintf("Style: %s", e.Recipe.Style))
+			}
+			if e.Recipe.ABV > 0 {
+				if e.Recipe.Style != "" {
+					sb.WriteString(fmt.Sprintf(" · ABV: %.1f%%", e.Recipe.ABV))
+				} else {
+					sb.WriteString(fmt.Sprintf("ABV: %.1f%%", e.Recipe.ABV))
+				}
+			}
+			sb.WriteString("\n")
+		}
 
 		if e.AvgRating > 0 {
 			full := int(e.AvgRating + 0.5)
 			stars := strings.Repeat("⭐", full) + strings.Repeat("☆", 5-full)
-			sb.WriteString(fmt.Sprintf("**Rating:** %s %.1f / 5 (%d votes)\n", stars, e.AvgRating, len(e.Ratings)))
+			sb.WriteString(fmt.Sprintf("%s %.1f / 5 (%d votes)\n", stars, e.AvgRating, len(e.Ratings)))
 		} else {
-			sb.WriteString("**Rating:** _no votes yet_\n")
+			sb.WriteString("_no votes yet_\n")
 		}
 
 		if e.Brew.ChannelID != "" {
-			sb.WriteString(fmt.Sprintf("**Channel:** <#%s>\n", e.Brew.ChannelID))
+			sb.WriteString(fmt.Sprintf("<#%s>\n", e.Brew.ChannelID))
 		}
-		sb.WriteString("\n")
 	}
 
-	sb.WriteString("_Updates automatically when ratings or recipes change._")
+	sb.WriteString("\n_Updates automatically when ratings or recipes change._")
 	return sb.String(), nil
 }
