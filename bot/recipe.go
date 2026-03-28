@@ -117,6 +117,11 @@ func (b *Bot) recipeView(s *discordgo.Session, i *discordgo.InteractionCreate) e
 		return nil
 	}
 
+	ratings, err := b.db.GetRatings(brew.ID)
+	if err != nil {
+		return err
+	}
+
 	var sb strings.Builder
 	sb.WriteString(fmt.Sprintf("🍺 **%s** — Recipe\n", brew.Name))
 	sb.WriteString(fmt.Sprintf("**Brewer:** <@%s>  **Date:** %s\n", brew.BrewerID, brew.Date))
@@ -126,6 +131,27 @@ func (b *Bot) recipeView(s *discordgo.Session, i *discordgo.InteractionCreate) e
 	if recipe.OG > 0 {
 		sb.WriteString(fmt.Sprintf("**OG:** %.3f  **FG:** %.3f  **ABV:** %.1f%%\n", recipe.OG, recipe.FG, recipe.ABV))
 	}
+
+	// Ratings summary
+	if len(ratings) > 0 {
+		sum := 0
+		for _, r := range ratings {
+			sum += r.Rating
+		}
+		avg := float64(sum) / float64(len(ratings))
+		sb.WriteString(fmt.Sprintf("**Rating:** %.1f/5 (%d votes)\n", avg, len(ratings)))
+		for _, r := range ratings {
+			stars := strings.Repeat("⭐", r.Rating) + strings.Repeat("☆", 5-r.Rating)
+			line := fmt.Sprintf("  %s %s — %d/5", stars, r.Username, r.Rating)
+			if r.Notes != "" {
+				line += fmt.Sprintf(": _%s_", r.Notes)
+			}
+			sb.WriteString(line + "\n")
+		}
+	} else {
+		sb.WriteString("**Rating:** no ratings yet\n")
+	}
+
 	if recipe.Ingredients != "" {
 		sb.WriteString(fmt.Sprintf("\n**Ingredients:**\n%s\n", recipe.Ingredients))
 	}
